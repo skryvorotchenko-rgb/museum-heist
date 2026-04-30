@@ -1,0 +1,385 @@
+/* ===== Layout / responsive ===== */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; padding: 0; height: 100%;
+  background: #1a1a1a; overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* Stage = a 1080x1920 canvas, scaled to fit viewport (preserves aspect). */
+#stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 1080 / 1920));
+  aspect-ratio: 1080 / 1920;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+}
+
+#bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+/* ===== Items (clickable, full-canvas image clipped to bbox) ===== */
+.item {
+  position: absolute;
+  cursor: pointer;
+  overflow: hidden;
+  z-index: 1;
+}
+.item img {
+  position: absolute;
+  /* Each item's PNG is full layout size (1080x1920). The wrapping .item div is positioned at the
+     visible bbox on the layout. We size the inner img so its full extent equals the stage size,
+     i.e. width = (1080 / bbox_width) * 100%, then shift it negatively to align the bbox to origin. */
+  width: calc(100% * 1080 / var(--bw, 1));
+  height: auto;
+  pointer-events: none;
+}
+/* per-item sizing using actual bbox widths (so img scales correctly).
+   Width % = 1080 / bbox_width * 100 ; height auto preserves aspect (image is 1080x1920). */
+.item[data-item="Painting1"] img { width: 465.52%; }
+.item[data-item="Painting2"] img { width: 450.00%; }
+.item[data-item="Keys"]      img { width: 1687.50%; }
+.item[data-item="Cock"]      img { width: 729.73%; }
+.item[data-item="Scroll"]    img { width: 750.00%; }
+.item[data-item="Crown"]     img { width: 729.73%; }
+.item[data-item="Gun"]       img { width: 1125.00%; }
+
+.item.bounce { animation: bounce 380ms ease; }
+@keyframes bounce {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.18) translateY(-6%); }
+  60%  { transform: scale(0.95) translateY(0); }
+  100% { transform: scale(1); }
+}
+
+/* ===== Slots ===== */
+.slot {
+  position: absolute;
+  width: 18%; aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  border-radius: 16%;
+  pointer-events: none; /* not draggable, only hit-tested in JS */
+}
+
+/* Placed character (after correct drop) */
+.placed {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  width: 14%;
+  z-index: 5;
+}
+.placed img {
+  width: 100%;
+  display: block;
+  -webkit-user-drag: none;
+}
+
+/* ===== Character strip (blue band of layout) ===== */
+#strip-area {
+  position: absolute;
+  left: 0; right: 0;
+  top: 66.66%;     /* ~y 1280 / 1920 */
+  height: 8.85%;   /* ~y 1450 - 1280 */
+  z-index: 3;
+  display: block;
+}
+
+#strip-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+#strip {
+  display: flex;
+  height: 100%;
+  width: max-content;
+  align-items: center;
+  gap: 0;
+  transition: transform 320ms cubic-bezier(.25,.8,.3,1);
+  will-change: transform;
+}
+
+.strip-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7%;
+  aspect-ratio: 1 / 1;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  color: #1f3a8a;
+  font-size: clamp(14px, 2.4vmin, 22px);
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  cursor: pointer;
+  z-index: 4;
+  padding: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+  touch-action: manipulation;
+}
+#strip-prev { left: 1.5%; }
+#strip-next { right: 1.5%; }
+.strip-arrow:active { transform: translateY(-50%) scale(0.92); }
+.strip-arrow.hidden { opacity: 0; pointer-events: none; }
+
+.char {
+  flex: 0 0 auto;
+  width: 16vmin; /* baseline; recalculated by JS so 5 fit per page */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 1.2%;
+  cursor: grab;
+  position: relative;
+  touch-action: none;
+}
+.char img {
+  height: 70%;
+  width: auto;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.35));
+}
+.char .name {
+  margin-top: 4px;
+  background: #fff;
+  color: #222;
+  font-size: clamp(10px, 1.6vmin, 14px);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  white-space: nowrap;
+}
+
+.char.placed-out { visibility: hidden; }
+
+/* Drag ghost (the floating character while dragging) */
+.dragging {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1000;
+  transform: translate(-50%, -100%);
+  width: 14%;
+}
+.dragging img {
+  width: 100%;
+  display: block;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+}
+.fall-back { transition: left 280ms ease, top 280ms ease, opacity 280ms ease; }
+
+/* ===== Hints panel (notebook area) ===== */
+#hints-area {
+  position: absolute;
+  left: 6.5%;
+  right: 4%;
+  top: 78.65%;
+  bottom: 2.5%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.5% 2%;
+  z-index: 2;
+  scrollbar-width: thin;
+  touch-action: pan-y;
+  /* needed for absolutely positioned watermark */
+  /* (already a containing block via z-index + offset, but make explicit) */
+}
+
+#hints-list {
+  list-style: none;
+  margin: 0; padding: 0;
+  position: relative;
+  z-index: 2;
+}
+
+/* Watermark in the centre of the hints panel until at least one hidden hint is revealed */
+#hints-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8% 12%;
+  pointer-events: none;
+  opacity: 0.32;
+  color: #2b2118;
+  transition: opacity 400ms ease;
+  z-index: 1;
+}
+#hints-watermark.hidden { opacity: 0; }
+#hints-watermark .wm-icon {
+  font-size: clamp(28px, 6vmin, 56px);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+#hints-watermark .wm-text {
+  font-size: clamp(13px, 2.1vmin, 18px);
+  font-style: italic;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 6px;
+  font-size: clamp(13px, 2vmin, 17px);
+  line-height: 1.35;
+  color: #2b2118;
+  border-bottom: 1px dashed rgba(0,0,0,0.12);
+  transition: opacity 400ms ease, background 300ms ease;
+  position: relative;
+}
+.hint .icon {
+  flex: 0 0 auto;
+  font-size: 1.25em;
+  line-height: 1;
+  margin-top: 1px;
+}
+.hint .text { flex: 1; }
+/* v2: locked hints are NOT shown at all in the list. */
+.hint.locked { display: none; }
+.hint.solved {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+/* New v2 reveal animation: hint appears "out of nothing" with a pop + glow */
+.hint.reveal-anim {
+  animation: hintAppear 1100ms cubic-bezier(.2,.9,.3,1.2);
+}
+.hint.reveal-anim .text {
+  animation: revealText 1100ms cubic-bezier(.2,.9,.3,1.2);
+  position: relative;
+  z-index: 2;
+}
+@keyframes hintAppear {
+  0%   { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; transform: translateY(-6px); }
+  20%  { opacity: 1; max-height: 200px; padding-top: 10px; padding-bottom: 10px; transform: translateY(0); }
+  100% { opacity: 1; max-height: 200px; }
+}
+@keyframes revealText {
+  0%   { opacity: 0; transform: scale(0.4) rotate(-6deg); filter: blur(6px); }
+  35%  { opacity: 1; transform: scale(1.18) rotate(2deg);  filter: blur(0); text-shadow: 0 0 18px rgba(255,215,0,0.9); }
+  65%  { transform: scale(0.96) rotate(-1deg); text-shadow: 0 0 8px rgba(255,215,0,0.4); }
+  100% { opacity: 1; transform: scale(1) rotate(0); text-shadow: none; }
+}
+
+/* ===== Confetti ===== */
+.confetti-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 1;
+}
+.confetti {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 10px; height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confettiBurst 1100ms cubic-bezier(.15,.7,.35,1) forwards;
+}
+.confetti.star {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #fff7a8 !important;
+  box-shadow: 0 0 8px 2px rgba(255, 230, 120, 0.9);
+}
+@keyframes confettiBurst {
+  0%   { opacity: 0; transform: translate(-50%, -50%) translate(0,0) rotate(0deg) scale(0.4); }
+  15%  { opacity: 1; }
+  100% { opacity: 0;
+         transform: translate(-50%, -50%)
+                    translate(var(--dx), var(--dy))
+                    rotate(var(--rot)) scale(1); }
+}
+
+/* ===== Tooltip above strip ===== */
+#tooltip {
+  position: absolute;
+  left: 50%;
+  top: 63%;                    /* sits a bit above blue strip (which starts at 66.66%) */
+  transform: translate(-50%, -10px) scale(0.9);
+  background: #2c2c2c;
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 18px;
+  font-size: clamp(12px, 1.9vmin, 16px);
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+  z-index: 40;
+}
+#tooltip::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid #2c2c2c;
+}
+#tooltip.show {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
+/* ===== Item disappear animation ===== */
+.item.vanish {
+  animation: itemVanish 380ms ease forwards;
+  pointer-events: none;
+}
+@keyframes itemVanish {
+  0%   { transform: scale(1);   opacity: 1; }
+  100% { transform: scale(0);   opacity: 0; }
+}
+
+/* ===== Win overlay ===== */
+#win {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+#win.show { display: flex; }
+.win-card {
+  background: #fff;
+  border-radius: 18px;
+  padding: 28px 36px;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+}
+.win-card h1 { margin: 0 0 8px; color: #2b2118; }
+.win-card p  { margin: 0 0 18px; color: #555; }
+.win-card button {
+  background: #c0392b; color: #fff; border: 0; padding: 10px 22px;
+  font-size: 16px; font-weight: 700; border-radius: 12px; cursor: pointer;
+}
