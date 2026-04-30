@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>Museum Heist</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage">
+    <!-- Layout background -->
+    <img id="bg" src="Assests/Layout_Game.png" draggable="false" />
+
+    <!-- Items overlay (clickable, with bounce animation). Each item div is positioned at the
+         bounding box of the item on the 1080x1920 layout; an inner <img> shows the full PNG
+         shifted so only the bbox region is visible. -->
+    <div class="item" data-item="Painting1" style="left:75.56%;top:6.88%;width:21.48%;height:15.00%">
+      <img src="Assests/Painting1.png" style="left:-351.63%;top:-45.83%" draggable="false" />
+    </div>
+    <div class="item" data-item="Painting2" style="left:50.74%;top:6.88%;width:22.22%;height:15.00%">
+      <img src="Assests/Painting2.png" style="left:-228.33%;top:-45.83%" draggable="false" />
+    </div>
+    <div class="item" data-item="Keys"      style="left:87.78%;top:28.13%;width:5.93%;height:4.17%">
+      <img src="Assests/Keys.png" style="left:-1481.25%;top:-675.00%" draggable="false" />
+    </div>
+    <div class="item" data-item="Cock"      style="left:9.26%; top:35.83%;width:13.70%;height:16.25%">
+      <img src="Assests/Cock.png" style="left:-67.57%;top:-220.51%" draggable="false" />
+    </div>
+    <div class="item" data-item="Scroll"    style="left:38.15%;top:35.21%;width:13.33%;height:7.08%">
+      <img src="Assests/Scroll.png" style="left:-286.11%;top:-496.99%" draggable="false" />
+    </div>
+    <div class="item" data-item="Crown"     style="left:77.04%;top:35.83%;width:13.70%;height:16.25%">
+      <img src="Assests/Crown.png" style="left:-562.16%;top:-220.51%" draggable="false" />
+    </div>
+    <div class="item" data-item="Gun"       style="left:31.85%;top:59.38%;width:8.89%;height:3.13%">
+      <img src="Assests/Gun.png" style="left:-358.33%;top:-1900.00%" draggable="false" />
+    </div>
+
+    <!-- Slots (drop targets) -->
+    <div class="slot" data-slot="1" style="left:28.7%;top:21.6%"></div>
+    <div class="slot" data-slot="2" style="left:62.96%;top:31.25%"></div>
+    <div class="slot" data-slot="3" style="left:85.65%;top:31.25%"></div>
+    <div class="slot" data-slot="4" style="left:28.7%;top:45.31%"></div>
+    <div class="slot" data-slot="5" style="left:49.07%;top:41.67%"></div>
+    <div class="slot" data-slot="6" style="left:68.98%;top:45.31%"></div>
+    <div class="slot" data-slot="7" style="left:31.94%;top:57.29%"></div>
+    <div class="slot" data-slot="8" style="left:57.41%;top:56.25%"></div>
+
+    <!-- Character strip (sits on the blue band of the layout) -->
+    <div id="strip-area">
+      <button id="strip-prev" class="strip-arrow" aria-label="Previous">&#9664;</button>
+      <div id="strip-viewport">
+        <div id="strip"></div>
+      </div>
+      <button id="strip-next" class="strip-arrow" aria-label="Next">&#9654;</button>
+    </div>
+
+    <!-- Hints panel (sits over the notebook of the layout) -->
+    <div id="hints-area">
+      <ul id="hints-list"></ul>
+    </div>
+
+    <!-- Win overlay -->
+    <div id="win">
+      <div class="win-card">
+        <h1>Case solved!</h1>
+        <p>You caught the gang.</p>
+        <button id="restart">Play again</button>
+      </div>
+    </div>
+
+    <!-- Floating tooltip (shown above the strip when player taps a locked hint) -->
+    <div id="tooltip">Find clues on the scene!</div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
